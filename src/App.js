@@ -2,19 +2,33 @@ import React, { Component } from "react";
 import request from "superagent";
 import "./style.css";
 
-const drawCards = id =>
+export const drawCards = id =>
   request.get(`https://deckofcardsapi.com/api/deck/${id}/draw/?count=2`);
 
-export default class App extends Component {
+const CardList = ({ list }) =>
+  list.map((item, index) => (
+    <img src={item.images.png} key={index} alt="img" />
+  ));
+
+const DrawButton = ({ handleClick, children }) => (
+  <button className="drawbutton" onClick={handleClick}>
+    {children}
+  </button>
+);
+
+export class App extends Component {
   state = {
     deckId: "",
-    playerOneCards: []
+    playerCards: [],
+    numberOfPlayers: 10
   };
 
-  drawPlayerOneCards = () => {
+  drawPlayerCards = index => {
     drawCards(this.state.deckId).then(result => {
+      const temp = this.state.playerCards;
+      temp[index] = result.body.cards;
       this.setState({
-        playerOneCards: result.body.cards
+        playerCards: temp
       });
     });
   };
@@ -29,15 +43,23 @@ export default class App extends Component {
       });
   }
 
+  renderPlayers = () => {
+    const elements = [];
+    for (let index = 0; index < this.state.numberOfPlayers; index++) {
+      elements.push(
+        <div key={index}>
+          <DrawButton handleClick={() => this.drawPlayerCards(index)}>
+            Draw One
+          </DrawButton>
+          <CardList list={this.state.playerCards[index] || []} />
+        </div>
+      );
+    }
+
+    return elements;
+  };
+
   render() {
-    return (
-      <div>
-        <button onClick={this.drawPlayerOneCards}>Draw Cards</button>
-        {this.state.deckId}
-        {this.state.playerOneCards.map((card, index) => (
-          <img src={card.images.png} key={index} alt="img" />
-        ))}
-      </div>
-    );
+    return <div>{this.renderPlayers()}</div>;
   }
 }
