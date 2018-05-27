@@ -1,9 +1,9 @@
 import React, { Component } from "react";
+import { connect } from "react-redux";
 import request from "superagent";
+import { getNewDeck, drawCard } from "./modules/cards";
+import { bindActionCreators } from "redux";
 import "./style.css";
-
-export const drawCards = id =>
-  request.get(`https://deckofcardsapi.com/api/deck/${id}/draw/?count=2`);
 
 const CardList = ({ list }) =>
   list.map((item, index) => (
@@ -16,7 +16,7 @@ const DrawButton = ({ handleClick, children }) => (
   </button>
 );
 
-export class App extends Component {
+class App extends Component {
   state = {
     deckId: "",
     playerCards: [],
@@ -24,23 +24,11 @@ export class App extends Component {
   };
 
   drawPlayerCards = index => {
-    drawCards(this.state.deckId).then(result => {
-      const temp = this.state.playerCards;
-      temp[index] = result.body.cards;
-      this.setState({
-        playerCards: temp
-      });
-    });
+    this.props.drawCard(this.props.deckId);
   };
 
   componentDidMount() {
-    request
-      .get("https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1")
-      .then(response => {
-        this.setState({
-          deckId: response.body.deck_id
-        });
-      });
+    this.props.getNewDeck();
   }
 
   renderPlayers = () => {
@@ -60,6 +48,21 @@ export class App extends Component {
   };
 
   render() {
-    return <div>{this.renderPlayers()}</div>;
+    return [<div>{this.renderPlayers()}</div>, <div>{this.props.deckId}</div>];
   }
 }
+
+const mapStateToProps = state => ({
+  deckId: state.cards.deckId
+});
+
+const mapDispatchToProps = dispatch =>
+  bindActionCreators(
+    {
+      getNewDeck,
+      drawCard
+    },
+    dispatch
+  );
+
+export default connect(mapStateToProps, mapDispatchToProps)(App);
